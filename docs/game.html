@@ -8,11 +8,63 @@
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
         #score { position: absolute; top: 10px; left: 10px; font-size: 24px; }
         canvas { display: block; margin: 0 auto; background: #000; }
+        #gameOverModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        #gameOverModal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: #333;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .modal-content h1 {
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            color: #ff0000;
+        }
+        .modal-content p {
+            font-size: 24px;
+            margin: 10px 0 30px 0;
+        }
+        #retryBtn {
+            background-color: #0f0;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        #retryBtn:hover {
+            background-color: #00cc00;
+        }
     </style>
 </head>
 <body>
 <div id="score">Score: 0</div>
 <canvas id="game" width="600" height="800"></canvas>
+<div id="gameOverModal">
+    <div class="modal-content">
+        <h1>Game Over!</h1>
+        <p id="finalScore">Final Score: 0</p>
+        <button id="retryBtn">Retry</button>
+    </div>
+</div>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -218,10 +270,26 @@ function loop(time) {
 
 function gameOver() {
     running = false;
-    ctx.fillStyle = '#f00';
-    ctx.font = '72px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over', SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+    document.getElementById('finalScore').innerText = 'Final Score: ' + score;
+    document.getElementById('gameOverModal').classList.add('show');
+}
+
+function restartGame() {
+    // Reset game state
+    score = 0;
+    aliens = [];
+    coins = [];
+    lasers = [];
+    lastAlien = 0;
+    lastCoin = 0;
+    lastTime = 0;
+    running = true;
+    
+    // Hide modal
+    document.getElementById('gameOverModal').classList.remove('show');
+    
+    // Restart game loop
+    requestAnimationFrame(loop);
 }
 
 window.addEventListener('keydown', e => {
@@ -229,6 +297,8 @@ window.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') rocket.moveRight();
     if (e.key === ' ') lasers.push(new Laser(rocket.x + rocket.width/2, rocket.y));
 });
+
+document.getElementById('retryBtn').addEventListener('click', restartGame);
 
 requestAnimationFrame(loop);
 </script>
