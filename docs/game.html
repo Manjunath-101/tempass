@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rocket Shooter (Web)</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; }
+        #score { position: absolute; top: 10px; left: 10px; font-size: 24px; }
+        canvas { display: block; margin: 0 auto; background: #000; }
+    </style>
+</head>
+<body>
+<div id="score">Score: 0</div>
+<canvas id="game" width="600" height="800"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const SCREEN_WIDTH = canvas.width;
+const SCREEN_HEIGHT = canvas.height;
+const LANE_COUNT = 3;
+const LANE_WIDTH = SCREEN_WIDTH / LANE_COUNT;
+
+let score = 0;
+
+class Rocket {
+    constructor() {
+        this.width = 40;
+        this.height = 60;
+        this.lane = Math.floor(LANE_COUNT / 2);
+        this.x = 0;
+        this.y = SCREEN_HEIGHT - this.height - 10;
+        this.updatePosition();
+    }
+    updatePosition() {
+        this.x = LANE_WIDTH / 2 + this.lane * LANE_WIDTH - this.width / 2;
+    }
+    moveLeft() {
+        if (this.lane > 0) {
+            this.lane--;
+            this.updatePosition();
+        }
+    }
+    moveRight() {
+        if (this.lane < LANE_COUNT - 1) {
+            this.lane++;
+            this.updatePosition();
+        }
+    }
+    draw() {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+}
+
+class Alien {
+    constructor(lane) {
+        this.width = 40;
+        this.height = 40;
+        this.lane = lane;
+        this.x = LANE_WIDTH / 2 + lane * LANE_WIDTH - this.width / 2;
+        this.y = -this.height;
+        this.speed = 3 + Math.random() * 3;
+    }
+    update() {
+        this.y += this.speed;
+    }
+    draw() {
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+}
+
+class Coin {
+    constructor(lane) {
+        this.radius = 15;
+        this.lane = lane;
+        this.x = LANE_WIDTH / 2 + lane * LANE_WIDTH;
+        this.y = -this.radius * 2;
+        this.speed = 3 + Math.random() * 2;
+    }
+    update() {
+        this.y += this.speed;
+    }
+    draw() {
+        ctx.fillStyle = '#ff0';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+class Laser {
+    constructor(x, y) {
+        this.width = 5;
+        this.height = 15;
+        this.x = x - this.width / 2;
+        this.y = y;
+        this.speed = 10;
+    }
+    update() {
+        this.y -= this.speed;
+    }
+    draw() {
+        ctx.fillStyle = '#0f0';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+}
+
+const rocket = new Rocket();
+let aliens = [];
+let coins = [];
+let lasers = [];
+
+function addAlien() {
+    aliens.push(new Alien(Math.floor(Math.random() * LANE_COUNT)));
+}
+function addCoin() {
+    coins.push(new Coin(Math.floor(Math.random() * LANE_COUNT)));
+}
+
+let lastAlien = 0;
+let lastCoin = 0;
+
+function update(delta) {
+    // spawn
+    lastAlien += delta;
+    lastCoin += delta;
+    if (lastAlien > 800) { addAlien(); lastAlien = 0; }
+    if (lastCoin > 1000) { addCoin(); lastCoin = 0; }
+    
+    aliens.forEach((a, i) => {
+        a.update();
+        if (a.y > SCREEN_HEIGHT) aliens.splice(i, 1);
+    });
+    coins.forEach((c, i) => {
+        c.update();
+        if (c.y - c.radius > SCREEN_HEIGHT) coins.splice(i, 1);
+    });
+    lasers.forEach((l, i) => {
+        l.update();
+        if (l.y + l.height < 0) lasers.splice(i, 1);
+    });
+
+    // collisions
+    coins.forEach((c, i) => {
+        if (c.lane === rocket.lane && Math.abs(c.y - (rocket.y + rocket.height/2)) < 30) {
+            score += 1;
+            coins.splice(i, 1);
+        }
+    });
+
+    lasers.forEach((l, li) => {
+        aliens.forEach((a, ai) => {
+            if (l.x < a.x + a.width && l.x + l.width > a.x &&
+                l.y < a.y + a.height && l.y + l.height > a.y) {
+                score += 5;
+                aliens.splice(ai, 1);
+                lasers.splice(li, 1);
+            }
+        });
+    });
+
+    // rocket hit
+    aliens.forEach(a => {
+        if (a.lane === rocket.lane && a.y + a.height > rocket.y) {
+            gameOver();
+        }
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    rocket.draw();
+    aliens.forEach(a => a.draw());
+    coins.forEach(c => c.draw());
+    lasers.forEach(l => l.draw());
+    document.getElementById('score').innerText = 'Score: ' + score;
+}
+
+let lastTime = 0;
+let running = true;
+function loop(time) {
+    if (!running) return;
+    let delta = time - lastTime;
+    lastTime = time;
+    update(delta);
+    draw();
+    requestAnimationFrame(loop);
+}
+
+function gameOver() {
+    running = false;
+    ctx.fillStyle = '#f00';
+    ctx.font = '72px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Over', SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+}
+
+window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') rocket.moveLeft();
+    if (e.key === 'ArrowRight') rocket.moveRight();
+    if (e.key === ' ') lasers.push(new Laser(rocket.x + rocket.width/2, rocket.y));
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

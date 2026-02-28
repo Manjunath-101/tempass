@@ -9,3 +9,9 @@ This site hosts documentation for the Rocket Shooter game.
 - Collect coins and shoot aliens.
 
 See the [README](../README.md) for full instructions and source code.
+
+## Play online
+
+You can now play a browser‑compatible version of the game:
+
+[▶️ Launch Rocket Shooter Web](./game.html)
