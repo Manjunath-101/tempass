@@ -298,6 +298,20 @@ window.addEventListener('keydown', e => {
     if (e.key === ' ') lasers.push(new Laser(rocket.x + rocket.width/2, rocket.y));
 });
 
+// touch controls for mobile: left-half touch moves left, right-half touch moves right
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    if (x < rect.width / 2) {
+        rocket.moveLeft();
+    } else {
+        rocket.moveRight();
+    }
+});
+
+// retry button handler
 document.getElementById('retryBtn').addEventListener('click', restartGame);
 
 requestAnimationFrame(loop);
