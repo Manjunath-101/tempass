@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -24,18 +25,41 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Rocket Shooter")
 clock = pygame.time.Clock()
 
+# Helper function to load images safely
+def load_image(filename, size):
+    """Load image with error handling"""
+    try:
+        # Try to find the image in multiple locations
+        paths_to_try = [
+            os.path.join(os.path.dirname(__file__), filename),
+            os.path.join(sys.path[0], filename),
+        ]
+
+        for path in paths_to_try:
+            if os.path.exists(path):
+                image = pygame.image.load(path)
+                return pygame.transform.scale(image, size)
+
+        # If image not found, create a placeholder
+        print(f"Warning: {filename} not found. Creating placeholder.")
+        placeholder = pygame.Surface(size)
+        placeholder.fill(YELLOW if "coin" not in filename else RED)
+        return placeholder
+    except Exception as e:
+        print(f"Error loading {filename}: {e}. Creating placeholder.")
+        placeholder = pygame.Surface(size)
+        placeholder.fill(RED)
+        return placeholder
+
 # Game objects
 
 class Rocket(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.width = 40
-        self.height = 60
-        self.color = WHITE
-        self.lane = LANE_COUNT // 2
-        self.image = pygame.Surface((self.width, self.height))
-        self.image.fill(self.color)
+        # load rocket image or placeholder
+        self.image = load_image("tony.png", (80, 100))
         self.rect = self.image.get_rect()
+        self.lane = LANE_COUNT // 2
         self.update_position()
 
     def update_position(self):
@@ -56,16 +80,13 @@ class Rocket(pygame.sprite.Sprite):
 class Alien(pygame.sprite.Sprite):
     def __init__(self, lane):
         super().__init__()
-        self.width = 40
-        self.height = 40
-        self.color = RED
-        self.image = pygame.Surface((self.width, self.height))
-        self.image.fill(self.color)
+        # use helper to load and scale
+        self.image = load_image("doom.png", (80, 80))
         self.rect = self.image.get_rect()
         center_x = LANE_WIDTH // 2 + lane * LANE_WIDTH
         self.rect.centerx = center_x
-        self.rect.top = -self.height
-        self.speed = random.randint(3, 6)
+        self.rect.top = -self.rect.height
+        self.speed = random.randint(2, 3)
 
     def update(self):
         self.rect.y += self.speed
@@ -83,7 +104,7 @@ class Coin(pygame.sprite.Sprite):
         center_x = LANE_WIDTH // 2 + lane * LANE_WIDTH
         self.rect.centerx = center_x
         self.rect.top = -self.radius * 2
-        self.speed = random.randint(3, 5)
+        self.speed = random.randint(3,5)
 
     def update(self):
         self.rect.y += self.speed
@@ -121,7 +142,7 @@ score = 0
 # Timers
 ADD_ALIEN = pygame.USEREVENT + 1
 ADD_COIN = pygame.USEREVENT + 2
-pygame.time.set_timer(ADD_ALIEN, 800)  # every 0.8 seconds
+pygame.time.set_timer(ADD_ALIEN, 1800)  # every 1.8 seconds
 pygame.time.set_timer(ADD_COIN, 1000)  # every 1 second
 
 # Main loop
